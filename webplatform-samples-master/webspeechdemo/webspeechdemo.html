@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Speech-To-Text</title>
+  <style>
+    * {
+      font-family: 'Poppins', Verdana, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: rgb(252, 247, 255);
+
+    }
+
+
+    h1 {
+      font-size: 2.5rem;
+      color: rgb(10, 10, 10);
+      /* Set text color to white */
+      margin: 0;
+      /* Remove default margin */
+      animation: fadeIn 1s ease-in-out;
+      /* Fade-in animation */
+    }
+
+    #results {
+      width: 90%;
+      max-width: 600px;
+      min-height: 150px;
+      padding: 20px;
+      margin: 20px 0;
+      border: 1px solid #ddd;
+      background-color: rgba(255, 255, 255, 0.9);
+      /* Semi-transparent white */
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      font-size: 16px;
+      line-height: 1.6;
+      animation: slideUp 0.5s ease-in-out;
+      /* Slide-up animation */
+    }
+
+    .final {
+      color: #333;
+    }
+
+    .interim {
+      color: #777;
+    }
+
+    .button-container {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .homebutton {
+      background:
+      border: none;
+      border-radius: 8px;
+      color: :black;
+      padding: 10px 20px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+  
+    }
+
+    .copy_button {
+      background: linear-gradient(to bottom, #291043, #6a3f6e);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      padding: 12px 24px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    .copy_button:hover {
+      background: linear-gradient(to bottom, #45226a, #87568b);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    #start_button {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    #start_button:hover {
+      transform: scale(1.1);
+    }
+
+    #start_img {
+      width: 60px;
+      height: 60px;
+    }
+
+    .info {
+      font-size: 14px;
+      color: #555;
+      text-align: center;
+      margin-top: 10px;
+      animation: fadeIn 1s ease-in-out;
+      /* Fade-in animation */
+    }
+
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 2rem;
+      }
+
+      #results {
+        width: 100%;
+        padding: 15px;
+      }
+
+      .button-container {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .button {
+        width: 100%;
+        padding: 10px 20px;
+      }
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+  <div style="position: absolute; top: 20px; left: 20px;">
+    <button onclick="window.location.href='https://sites.google.com/view/speech2txt/home'" class="homebutton">Back to Home</button>
+  </div>
+
+  <div class="header">
+    <h1>Speech-To-Text</h1>
+  </div>
+  <div id="results">
+    <span id="final_span" class="final"></span>
+    <span id="interim_span" class="interim"></span>
+  </div>
+  <div class="button-container">
+    <button id="start_button">
+      <img id="start_img" src="mic2-removebg-preview.png" alt="Start">
+    </button>
+  </div>
+  <div id="info" class="info">
+    Click on the microphone icon and begin speaking.
+  </div>
+  <div class="button-container">
+    <button id="copy_button" class="copy_button">Copy Text</button>
+  </div>
+
+  <script>
+    var final_transcript = '';
+    var recognizing = false;
+    var recognition;
+
+    // Image paths
+    const startImg = 'mic2-removebg-preview.png'; // Default microphone icon
+    const pauseImg = 'resume-removebg-preview.png'; // Image for when recording is paused
+    const activeImg = 'final sound.gif'; // Image for when recording is active
+
+    if (!('webkitSpeechRecognition' in window)) {
+      alert('Web Speech API is not supported in this browser. Please use Chrome version 25 or later.');
+    } else {
+      recognition = new webkitSpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+
+      recognition.onstart = function () {
+        recognizing = true;
+        document.getElementById('info').textContent = 'Speak now...';
+        document.getElementById('start_img').src = activeImg; // Show active recording image
+      };
+
+      recognition.onerror = function (event) {
+        if (event.error === 'no-speech') {
+          document.getElementById('info').textContent = 'No speech detected.';
+        } else if (event.error === 'audio-capture') {
+          document.getElementById('info').textContent = 'No microphone found.';
+        } else if (event.error === 'not-allowed') {
+          document.getElementById('info').textContent = 'Microphone access denied.';
+        }
+        recognizing = false;
+        document.getElementById('start_img').src = startImg; // Reset to start image
+      };
+
+      recognition.onend = function () {
+        recognizing = false;
+        document.getElementById('start_img').src = pauseImg; // Show resume image
+        if (!final_transcript) {
+          document.getElementById('info').textContent = 'Click on the microphone icon and begin speaking.';
+        }
+      };
+
+      recognition.onresult = function (event) {
+        var interim_transcript = '';
+        for (var i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            final_transcript += event.results[i][0].transcript;
+          } else {
+            interim_transcript += event.results[i][0].transcript;
+          }
+        }
+        document.getElementById('final_span').textContent = final_transcript;
+        document.getElementById('interim_span').textContent = interim_transcript;
+      };
+    }
+
+    // Toggle between start and pause
+    document.getElementById('start_button').addEventListener('click', function () {
+      if (recognizing) {
+        recognition.stop();
+        recognizing = false;
+        document.getElementById('start_img').src = pauseImg; // Show resume image
+        document.getElementById('info').textContent = 'Recording paused. Click to resume.';
+      } else {
+        if (!final_transcript) {
+          final_transcript = ''; // Reset transcript if starting fresh
+        }
+        recognition.start();
+        recognizing = true;
+        document.getElementById('info').textContent = 'Speak now...';
+        document.getElementById('start_img').src = activeImg; // Show active recording image
+      }
+    });
+
+    // Copy text and reset the UI
+    document.getElementById('copy_button').addEventListener('click', function () {
+      if (final_transcript) {
+        navigator.clipboard.writeText(final_transcript)
+          .then(() => {
+            document.getElementById('info').textContent = 'Text copied to clipboard! Record again?';
+            final_transcript = ''; // Reset transcript for new recording
+            document.getElementById('final_span').textContent = '';
+            document.getElementById('interim_span').textContent = '';
+            document.getElementById('start_img').src = startImg; // Reset to default microphone image
+          })
+          .catch(() => {
+            document.getElementById('info').textContent = 'Failed to copy text.';
+          });
+      } else {
+        document.getElementById('info').textContent = 'No text to copy.';
+      }
+    });
+  </script>
+</body>
+
+</html>
