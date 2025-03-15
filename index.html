@@ -169,7 +169,6 @@
 </head>
 
 <body>
-
   <div style="position: absolute; top: 20px; left: 20px;">
     <button onclick="window.location.href='https://sites.google.com/view/speech2txt/home'" class="homebutton">Back to Home</button>
   </div>
@@ -198,22 +197,21 @@
     var recognizing = false;
     var recognition;
 
-    // Image paths
-    const startImg = 'mic2-removebg-preview.png'; // Default microphone icon
-    const pauseImg = 'resume-removebg-preview.png'; // Image for when recording is paused
-    const activeImg = 'final sound.gif'; // Image for when recording is active
+    const startImg = 'mic2-removebg-preview.png';
+    const pauseImg = 'resume-removebg-preview.png';
+    const activeImg = 'final sound.gif';
 
     if (!('webkitSpeechRecognition' in window)) {
       alert('Web Speech API is not supported in this browser. Please use Chrome version 25 or later.');
     } else {
       recognition = new webkitSpeechRecognition();
-      recognition.continuous = true;
+      recognition.continuous = false; // Set to false to avoid overlapping results
       recognition.interimResults = true;
 
       recognition.onstart = function () {
         recognizing = true;
         document.getElementById('info').textContent = 'Speak now...';
-        document.getElementById('start_img').src = activeImg; // Show active recording image
+        document.getElementById('start_img').src = activeImg;
       };
 
       recognition.onerror = function (event) {
@@ -225,12 +223,12 @@
           document.getElementById('info').textContent = 'Microphone access denied.';
         }
         recognizing = false;
-        document.getElementById('start_img').src = startImg; // Reset to start image
+        document.getElementById('start_img').src = startImg;
       };
 
       recognition.onend = function () {
         recognizing = false;
-        document.getElementById('start_img').src = pauseImg; // Show resume image
+        document.getElementById('start_img').src = pauseImg;
         if (!final_transcript) {
           document.getElementById('info').textContent = 'Click on the microphone icon and begin speaking.';
         }
@@ -240,7 +238,8 @@
         var interim_transcript = '';
         for (var i = event.resultIndex; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
-            final_transcript += event.results[i][0].transcript;
+            // Append new transcript to the existing one
+            final_transcript += event.results[i][0].transcript + ' ';
           } else {
             interim_transcript += event.results[i][0].transcript;
           }
@@ -250,34 +249,33 @@
       };
     }
 
-    // Toggle between start and pause
     document.getElementById('start_button').addEventListener('click', function () {
       if (recognizing) {
+        // Pause the recording
         recognition.stop();
         recognizing = false;
-        document.getElementById('start_img').src = pauseImg; // Show resume image
+        document.getElementById('start_img').src = pauseImg;
         document.getElementById('info').textContent = 'Recording paused. Click to resume.';
       } else {
-        if (!final_transcript) {
-          final_transcript = ''; // Reset transcript if starting fresh
-        }
+        // Resume or start a new recording
         recognition.start();
         recognizing = true;
         document.getElementById('info').textContent = 'Speak now...';
-        document.getElementById('start_img').src = activeImg; // Show active recording image
+        document.getElementById('start_img').src = activeImg;
       }
     });
 
-    // Copy text and reset the UI
     document.getElementById('copy_button').addEventListener('click', function () {
       if (final_transcript) {
+        // Copy text to clipboard
         navigator.clipboard.writeText(final_transcript)
           .then(() => {
             document.getElementById('info').textContent = 'Text copied to clipboard! Record again?';
-            final_transcript = ''; // Reset transcript for new recording
+            // Reset the transcript for a new recording
+            final_transcript = '';
             document.getElementById('final_span').textContent = '';
             document.getElementById('interim_span').textContent = '';
-            document.getElementById('start_img').src = startImg; // Reset to default microphone image
+            document.getElementById('start_img').src = startImg;
           })
           .catch(() => {
             document.getElementById('info').textContent = 'Failed to copy text.';
